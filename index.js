@@ -1,30 +1,36 @@
 const { Telegraf } = require('telegraf');
 const fs = require("fs");
 
-function random_int(max) {
-    return Math.floor(Math.random() * max);
-}
+const Jokes = require("./jokes");
+const {commands, utils} = require("./commands");
 
-function random(arr) {
-    return arr[random_int(arr.length)];
-}
-
-// Get BOT_TOKEN and DOMAIN from .env file.
+// Get BOT_TOKEN from .env file.
 require('dotenv').config();
 
-const jokes = fs.readFileSync("./jokes.txt")
-    .toString()
-    .split("<:!-|SEPARATOR|-!:>");
+global.jokes = new Jokes();
+global.jokes.init_with_JSON("jokes.json");
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-bot.start((ctx) => ctx.reply('Welcome'));
-bot.help((ctx) => ctx.reply('Send me a sticker'));
 
-bot.command("joke", ctx => ctx.reply(random(jokes)));
+bot.start(commands.c_start);
+bot.help(commands.c_help);
+bot.command("joke", commands.c_joke);
+bot.command("report", commands.c_report);
+bot.command("edit", commands.c_edit);
+bot.command("joke_id", commands.c_joke_id);
+
+
 
 bot.launch().then(_r => console.log("Bot started."));
 
 // Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', () => {
+    bot.stop('SIGINT');
+    global.jokes.save_in_JSON("jokes.json");
+});
+
+process.once('SIGTERM', () => {
+    bot.stop('SIGTERM');
+    global.jokes.save_in_JSON("jokes.json");
+});
